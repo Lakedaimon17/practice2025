@@ -1,0 +1,29 @@
+name: build
+
+on:
+  push:
+  pull_request:
+
+env:
+  DOTNET_VERSION: '9.0'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Install dependencies
+      run: dotnet restore practice2025.sln
+      
+    - name: Build
+      run: dotnet build practice2025.sln --configuration Release --no-restore
+    - name: Test
+      run: dotnet test practice2025.sln --configuration Release --no-build
