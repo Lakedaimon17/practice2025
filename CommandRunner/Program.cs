@@ -2,6 +2,7 @@
 using System.IO;
 using System.Reflection;
 using CommandLib;
+using FileSystemCommands;
 
 namespace CommandRunner;
 
