@@ -59,7 +59,7 @@ namespace Task08.Tests
         {
             var testDir = Path.Combine(Path.GetTempPath(), "SizeTestDir");
             Directory.CreateDirectory(testDir);
-            File.WriteAllText(Path.Combine(testDir, "small.txt"), "12345"); // 5 байт
+            File.WriteAllText(Path.Combine(testDir, "small.txt"), "12345");
 
             var command = new DirectorySizeCommand(testDir);
             var output = CaptureConsoleOutput(command.Execute);
