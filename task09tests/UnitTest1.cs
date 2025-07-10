@@ -92,9 +92,9 @@ namespace task09tests
             var currentDir = Directory.GetCurrentDirectory();
             var solutionRoot = Directory.GetParent(currentDir).Parent.Parent.Parent.FullName;
 
-            string configuration = "Release";
+            string configuration = Environment.GetEnvironmentVariable("CONFIGURATION") ?? "Release";
 
-            var dllPath = Path.Combine(solutionRoot, "SampleLibrary", "bin", "Debug", "net9.0", "SampleLibrary.dll");
+            var dllPath = Path.Combine(solutionRoot, "SampleLibrary", "bin", configuration, "net9.0", "SampleLibrary.dll");
 
             if (!File.Exists(dllPath))
             {
