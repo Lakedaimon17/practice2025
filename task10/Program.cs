@@ -43,65 +43,73 @@ namespace PluginLoaderApp
         {
             var dllFiles = Directory.GetFiles(_pluginsDirectory, "*.dll");
 
-            if (dllFiles.Length == 0)
+            if (!dllFiles.Any())
             {
                 Console.WriteLine("Плагины (.dll) не найдены.");
                 return;
             }
 
-            var pluginInfos = new Dictionary<string, PluginInfo>();
-
-            foreach (var dll in dllFiles)
-            {
-                try
+            var pluginInfos = dllFiles
+                .Select(LoadAssemblyFromDll)
+                .Where(asm => asm != null)
+                .SelectMany(assembly => assembly.GetTypes()
+                    .Where(type =>
+                        type.GetCustomAttribute<PluginLoadAttribute>() != null &&
+                        typeof(IPluginCommand).IsAssignableFrom(type) &&
+                        type.GetConstructor(Type.EmptyTypes) != null)
+                    .Select(type => new { assembly, type }))
+                .Select(x =>
                 {
-                    var assembly = Assembly.LoadFrom(dll);
-                    foreach (var type in assembly.GetTypes())
+                    var attr = x.type.GetCustomAttribute<PluginLoadAttribute>();
+                    return new PluginInfo
                     {
-                        var attr = type.GetCustomAttribute<PluginLoadAttribute>();
-                        if (attr != null &&
-                            typeof(IPluginCommand).IsAssignableFrom(type) &&
-                            type.GetConstructor(Type.EmptyTypes) != null)
-                        {
-                            var pluginName = type.FullName;
-                            pluginInfos[pluginName] = new PluginInfo
-                            {
-                                TypeName = pluginName,
-                                Type = type,
-                                Dependencies = attr.Dependencies.ToList(),
-                                AssemblyPath = dll
-                            };
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Ошибка при загрузке {dll}: {ex.Message}");
-                }
-            }
+                        TypeName = x.type.FullName,
+                        Type = x.type,
+                        Dependencies = attr.Dependencies.ToList(),
+                        AssemblyPath = x.assembly.Location
+                    };
+                })
+                .ToDictionary(p => p.TypeName);
 
-            if (pluginInfos.Count == 0)
+            if (!pluginInfos.Any())
             {
                 Console.WriteLine("Не найдено подходящих плагинов.");
                 return;
             }
 
-            var orderedPlugins = TopologicalSort(pluginInfos.Values.ToList());
+            var pluginList = pluginInfos.Values.ToList();
 
-            foreach (var plugin in orderedPlugins)
+            var orderedPlugins = TopologicalSort(pluginList);
+
+            orderedPlugins.ToList().ForEach(RunPlugin);
+        }
+
+        private void RunPlugin(PluginInfo plugin)
+        {
+            try
             {
-                try
-                {
-                    var assembly = Assembly.LoadFrom(plugin.AssemblyPath);
-                    var pluginType = assembly.GetType(plugin.TypeName);
-                    var instance = Activator.CreateInstance(pluginType);
-                    var executeMethod = pluginType.GetMethod("Execute", BindingFlags.Instance | BindingFlags.Public);
-                    executeMethod.Invoke(instance, null);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Ошибка выполнения плагина {plugin.TypeName}: {ex.InnerException?.Message ?? ex.Message}");
-                }
+                var assembly = Assembly.LoadFrom(plugin.AssemblyPath);
+                var pluginType = assembly.GetType(plugin.TypeName);
+                var instance = Activator.CreateInstance(pluginType);
+                var executeMethod = pluginType.GetMethod("Execute", BindingFlags.Instance | BindingFlags.Public);
+                executeMethod.Invoke(instance, null);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка выполнения плагина {plugin.TypeName}: {ex.InnerException?.Message ?? ex.Message}");
+            }
+        }
+
+        private Assembly LoadAssemblyFromDll(string dll)
+        {
+            try
+            {
+                return Assembly.LoadFrom(dll);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при загрузке {dll}: {ex.Message}");
+                return null;
             }
         }
 
@@ -113,22 +121,22 @@ namespace PluginLoaderApp
             public string AssemblyPath { get; set; }
         }
 
-        private static List<PluginInfo> TopologicalSort(List<PluginInfo> plugins)
+        private IEnumerable<PluginInfo> TopologicalSort(List<PluginInfo> plugins)
         {
             var visited = new HashSet<string>();
-            var result = new List<PluginInfo>();
             var visiting = new HashSet<string>();
+            var result = new List<PluginInfo>();
             var pluginMap = plugins.ToDictionary(p => p.TypeName);
 
-            foreach (var plugin in plugins)
+            plugins.ToList().ForEach(plugin =>
             {
                 Visit(plugin, pluginMap, visited, visiting, result);
-            }
+            });
 
             return result;
         }
 
-        private static void Visit(
+        private void Visit(
             PluginInfo plugin,
             Dictionary<string, PluginInfo> pluginMap,
             HashSet<string> visited,
@@ -143,7 +151,7 @@ namespace PluginLoaderApp
 
             visiting.Add(plugin.TypeName);
 
-            foreach (var depName in plugin.Dependencies)
+            plugin.Dependencies.ToList().ForEach(depName =>
             {
                 if (pluginMap.TryGetValue(depName, out var dependency))
                 {
@@ -153,7 +161,7 @@ namespace PluginLoaderApp
                 {
                     Console.WriteLine($"Предупреждение: Не найдена зависимость '{depName}'");
                 }
-            }
+            });
 
             visiting.Remove(plugin.TypeName);
             visited.Add(plugin.TypeName);
