@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "task07", "task07\task07.csproj", "{AF83ED13-3BE6-479E-A350-E9F1A309A2D9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "task07tests", "task07tests\task07tests.csproj", "{52B2AF1A-7DF1-45F2-947A-7E6D72510E73}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AF83ED13-3BE6-479E-A350-E9F1A309A2D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF83ED13-3BE6-479E-A350-E9F1A309A2D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF83ED13-3BE6-479E-A350-E9F1A309A2D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF83ED13-3BE6-479E-A350-E9F1A309A2D9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{52B2AF1A-7DF1-45F2-947A-7E6D72510E73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52B2AF1A-7DF1-45F2-947A-7E6D72510E73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52B2AF1A-7DF1-45F2-947A-7E6D72510E73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52B2AF1A-7DF1-45F2-947A-7E6D72510E73}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
