@@ -83,7 +83,8 @@ namespace task09
                     return displayNameLine.Concat(
                         method.GetParameters().Select(p =>
                             $"  Параметр: {p.Name} ({p.ParameterType})"
-                        ));
+                        )
+                    );
                 }));
 
             lines.Add("\nСвойства:");
@@ -107,16 +108,64 @@ namespace task09
 
         public static void PrintTypeInfo(Type type)
         {
-            Console.WriteLine(new string('-', 50));
-            Console.WriteLine($"Класс: {type.FullName}");
+            var output = new System.Collections.Generic.List<string>
+            {
+                new string('-', 50),
+                $"Класс: {type.FullName}"
+            };
 
             var displayNameAttr = type.GetCustomAttribute<DisplayNameAttribute>();
             if (displayNameAttr is not null)
-                Console.WriteLine($"Отображаемое имя: {displayNameAttr.DisplayName}");
+                output.Add($"Отображаемое имя: {displayNameAttr.DisplayName}");
 
             var versionAttr = type.GetCustomAttribute<VersionAttribute>();
             if (versionAttr is not null)
-                Console.WriteLine($"Версия: {versionAttr.Major}.{versionAttr.Minor}");
+                output.Add($"Версия: {versionAttr.Major}.{versionAttr.Minor}");
+
+            output.Add("\nКонструкторы:");
+
+            output.AddRange(type.GetConstructors(BindingFlags.Instance | BindingFlags.Public)
+                .SelectMany(ctor => new[]
+                {
+                    $"- {ctor.Name} ({ctor.DeclaringType?.Name})",
+                }.Concat(ctor.GetParameters().Select(p =>
+                    $"  Параметр: {p.Name} ({p.ParameterType})"
+                ))));
+
+            output.Add("\nМетоды:");
+
+            output.AddRange(type.GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                .SelectMany(method =>
+                {
+                    var methodLine = $"- {method.Name} ({method.ReturnType})";
+
+                    var attr = method.GetCustomAttribute<DisplayNameAttribute>();
+                    var displayNameLine = attr != null
+                        ? new[] { methodLine, $"  Отображаемое имя: {attr.DisplayName}" }
+                        : new[] { methodLine };
+
+                    return displayNameLine.Concat(
+                        method.GetParameters().Select(p =>
+                            $"  Параметр: {p.Name} ({p.ParameterType})"
+                        )
+                    );
+                }));
+
+            output.Add("\nСвойства:");
+
+            output.AddRange(type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .Select(property =>
+                {
+                    var propertyLine = $"- {property.Name} ({property.PropertyType})";
+
+                    var attr = property.GetCustomAttribute<DisplayNameAttribute>();
+                    if (attr is null)
+                        return propertyLine;
+
+                    return $"{propertyLine}\n  Отображаемое имя: {attr.DisplayName}";
+                }));
+
+            Console.WriteLine(string.Join(Environment.NewLine, output));
         }
     }
 }
