@@ -44,38 +44,65 @@ namespace task09
 
         private static string[] FormatTypeInfo(Type type)
         {
-            var result = new System.Collections.Generic.List<string>
+            var lines = new System.Collections.Generic.List<string>
             {
                 new string('-', 50),
                 $"Класс: {type.FullName}"
             };
 
             var displayNameAttr = type.GetCustomAttribute<DisplayNameAttribute>();
-            var versionAttr = type.GetCustomAttribute<VersionAttribute>();
-
             if (displayNameAttr is not null)
-                result.Add($"Отображаемое имя: {displayNameAttr.DisplayName}");
+                lines.Add($"Отображаемое имя: {displayNameAttr.DisplayName}");
 
+            var versionAttr = type.GetCustomAttribute<VersionAttribute>();
             if (versionAttr is not null)
-                result.Add($"Версия: {versionAttr.Major}.{versionAttr.Minor}");
+                lines.Add($"Версия: {versionAttr.Major}.{versionAttr.Minor}");
 
-            result.Add("\nКонструкторы:");
-            result.AddRange(type.GetConstructors(BindingFlags.Instance | BindingFlags.Public)
-                .Select(c => $"- {c.Name}")
-                .DefaultIfEmpty("  Нет публичных конструкторов"));
+            lines.Add("\nКонструкторы:");
 
-            result.Add("\nМетоды:");
-            result.AddRange(type.GetMethods(BindingFlags.Instance | BindingFlags.Public)
-                .Select(m => $"- {m.Name}")
-                .DefaultIfEmpty("  Нет публичных методов"));
+            lines.AddRange(type.GetConstructors(BindingFlags.Instance | BindingFlags.Public)
+                .SelectMany(ctor => new[]
+                {
+                    $"- {ctor.Name} ({ctor.DeclaringType?.Name})",
+                }.Concat(ctor.GetParameters().Select(p =>
+                    $"  Параметр: {p.Name} ({p.ParameterType})"
+                ))));
 
-            result.Add("\nСвойства:");
-            result.AddRange(type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                .Select(p => $"- {p.Name}")
-                .DefaultIfEmpty("  Нет публичных свойств"));
+            lines.Add("\nМетоды:");
 
-            result.Add("");
-            return result.ToArray();
+            lines.AddRange(type.GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                .SelectMany(method =>
+                {
+                    var methodLine = $"- {method.Name} ({method.ReturnType})";
+
+                    var attr = method.GetCustomAttribute<DisplayNameAttribute>();
+                    var displayNameLine = attr != null
+                        ? new[] { methodLine, $"  Отображаемое имя: {attr.DisplayName}" }
+                        : new[] { methodLine };
+
+                    return displayNameLine.Concat(
+                        method.GetParameters().Select(p =>
+                            $"  Параметр: {p.Name} ({p.ParameterType})"
+                        ));
+                }));
+
+            lines.Add("\nСвойства:");
+
+            lines.AddRange(type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .Select(property =>
+                {
+                    var propertyLine = $"- {property.Name} ({property.PropertyType})";
+
+                    var attr = property.GetCustomAttribute<DisplayNameAttribute>();
+                    if (attr is null)
+                        return propertyLine;
+
+                    return $"{propertyLine}\n  Отображаемое имя: {attr.DisplayName}";
+                }));
+
+            lines.Add(string.Empty);
+
+            return lines.ToArray();
         }
 
         public static void PrintTypeInfo(Type type)
