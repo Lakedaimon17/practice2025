@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using SampleLibrary;
 
@@ -28,13 +29,12 @@ namespace task09
                 Assembly assembly = Assembly.LoadFrom(dllPath);
                 Console.WriteLine($"Анализируем сборку: {assembly.FullName}\n");
 
-                foreach (Type type in assembly.GetTypes())
-                {
-                    if (type.IsClass)
-                    {
-                        PrintTypeInfo(type);
-                    }
-                }
+                var outputLines = assembly.GetTypes()
+                    .Where(t => t.IsClass)
+                    .SelectMany(FormatTypeInfo)
+                    .ToList();
+
+                Console.WriteLine(string.Join(Environment.NewLine, outputLines));
             }
             catch (Exception ex)
             {
@@ -42,76 +42,54 @@ namespace task09
             }
         }
 
+        private static string[] FormatTypeInfo(Type type)
+        {
+            var result = new System.Collections.Generic.List<string>
+            {
+                new string('-', 50),
+                $"Класс: {type.FullName}"
+            };
+
+            var displayNameAttr = type.GetCustomAttribute<DisplayNameAttribute>();
+            var versionAttr = type.GetCustomAttribute<VersionAttribute>();
+
+            if (displayNameAttr is not null)
+                result.Add($"Отображаемое имя: {displayNameAttr.DisplayName}");
+
+            if (versionAttr is not null)
+                result.Add($"Версия: {versionAttr.Major}.{versionAttr.Minor}");
+
+            result.Add("\nКонструкторы:");
+            result.AddRange(type.GetConstructors(BindingFlags.Instance | BindingFlags.Public)
+                .Select(c => $"- {c.Name}")
+                .DefaultIfEmpty("  Нет публичных конструкторов"));
+
+            result.Add("\nМетоды:");
+            result.AddRange(type.GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                .Select(m => $"- {m.Name}")
+                .DefaultIfEmpty("  Нет публичных методов"));
+
+            result.Add("\nСвойства:");
+            result.AddRange(type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .Select(p => $"- {p.Name}")
+                .DefaultIfEmpty("  Нет публичных свойств"));
+
+            result.Add("");
+            return result.ToArray();
+        }
+
         public static void PrintTypeInfo(Type type)
         {
             Console.WriteLine(new string('-', 50));
             Console.WriteLine($"Класс: {type.FullName}");
 
-            PrintDisplayNameAttribute(type);
-            PrintVersionAttribute(type);
+            var displayNameAttr = type.GetCustomAttribute<DisplayNameAttribute>();
+            if (displayNameAttr is not null)
+                Console.WriteLine($"Отображаемое имя: {displayNameAttr.DisplayName}");
 
-            Console.WriteLine("\nКонструкторы:");
-            foreach (var ctor in type.GetConstructors(BindingFlags.Instance | BindingFlags.Public))
-            {
-                PrintConstructor(ctor);
-            }
-
-            Console.WriteLine("\nМетоды:");
-            foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public))
-            {
-                PrintMethod(method);
-            }
-
-            Console.WriteLine("\nСвойства:");
-            foreach (var prop in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
-            {
-                PrintProperty(prop);
-            }
-
-            Console.WriteLine();
-        }
-
-        private static void PrintDisplayNameAttribute(Type type)
-        {
-            var attr = type.GetCustomAttribute<DisplayNameAttribute>();
-            if (attr != null)
-                Console.WriteLine($"Отображаемое имя: {attr.DisplayName}");
-        }
-
-        private static void PrintVersionAttribute(Type type)
-        {
-            var attr = type.GetCustomAttribute<VersionAttribute>();
-            if (attr != null)
-                Console.WriteLine($"Версия: {attr.Major}.{attr.Minor}");
-        }
-
-        private static void PrintConstructor(ConstructorInfo ctor)
-        {
-            Console.WriteLine($"- {ctor.Name} ({ctor.DeclaringType?.Name})");
-            foreach (var param in ctor.GetParameters())
-            {
-                Console.WriteLine($"  Параметр: {param.Name} ({param.ParameterType})");
-            }
-        }
-
-        private static void PrintMethod(MethodInfo method)
-        {
-            Console.WriteLine($"- {method.Name} ({method.ReturnType})");
-            var attr = method.GetCustomAttribute<DisplayNameAttribute>();
-            if (attr != null)
-                Console.WriteLine($"  Отображаемое имя: {attr.DisplayName}");
-            foreach (var param in method.GetParameters())
-            {
-                Console.WriteLine($"  Параметр: {param.Name} ({param.ParameterType})");
-            }
-        }
-
-        private static void PrintProperty(PropertyInfo property)
-        {
-            Console.WriteLine($"- {property.Name} ({property.PropertyType})");
-            var attr = property.GetCustomAttribute<DisplayNameAttribute>();
-            if (attr != null)
-                Console.WriteLine($"  Отображаемое имя: {attr.DisplayName}");
+            var versionAttr = type.GetCustomAttribute<VersionAttribute>();
+            if (versionAttr is not null)
+                Console.WriteLine($"Версия: {versionAttr.Major}.{versionAttr.Minor}");
         }
     }
 }
