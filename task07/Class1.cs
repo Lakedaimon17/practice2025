@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 
 namespace task07.Attributes
@@ -62,25 +63,21 @@ namespace task07
                 Console.WriteLine($"Версия: {versionAttr.Major}.{versionAttr.Minor}");
             }
 
-            Console.WriteLine("Свойства:");
-            var propertiesQuery = from prop in type.GetProperties()
-                                  let attr = prop.GetCustomAttribute<Attributes.DisplayNameAttribute>()
-                                  select attr?.DisplayName ?? prop.Name;
+            var properties = type.GetProperties()
+                .Select(prop => prop.GetCustomAttribute<Attributes.DisplayNameAttribute>()?
+                    .DisplayName ?? prop.Name)
+                .ToList();
 
-            foreach (var name in propertiesQuery)
-            {
-                Console.WriteLine($"- {name}");
-            }
+            Console.WriteLine("Свойства:");
+            Console.WriteLine(string.Join("\n", properties.Select(p => $"- {p}")));
+
+            var methods = type.GetMethods()
+                .Select(method => method.GetCustomAttribute<Attributes.DisplayNameAttribute>()?
+                    .DisplayName ?? method.Name)
+                .ToList();
 
             Console.WriteLine("Методы:");
-            var methodsQuery = from method in type.GetMethods()
-                               let attr = method.GetCustomAttribute<Attributes.DisplayNameAttribute>()
-                               select attr?.DisplayName ?? method.Name;
-
-            foreach (var name in methodsQuery)
-            {
-                Console.WriteLine($"- {name}");
-            }
+            Console.WriteLine(string.Join("\n", methods.Select(m => $"- {m}")));
         }
     }
 }
